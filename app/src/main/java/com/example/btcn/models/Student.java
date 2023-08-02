@@ -67,6 +67,7 @@ public class Student {
         studentMap.put("id", this.id);
         studentMap.put("name", this.name);
         studentMap.put("gpa", this.gpa);
+        studentMap.put("facultyId", this.facultyId);
 
         return studentMap;
     }

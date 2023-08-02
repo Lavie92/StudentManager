@@ -46,9 +46,11 @@ public class StudentFirebaseDAO {
 
                     @Override
                     public void onSuccess(Void unused) {
-                        Toast.makeText(context, "Thêm mới student thành công!",
-                                Toast.LENGTH_SHORT).show();
+                        if (context != null) {
+                            Toast.makeText(context, "Thêm mới student thành công!", Toast.LENGTH_SHORT).show();
+                        }
                     }
+
                 }).addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(@NonNull Exception e) {
@@ -97,11 +99,10 @@ public class StudentFirebaseDAO {
             }
         });
     }
-    public void updateStudent(String id, Student student) {
-        student.setFacultyId(student.getFacultyId());
-
-        db.collection("Students").document(id)
-                .set(student);
+    public void Update(Student student) {
+        if (student.getId() != null) {
+            db.collection("Student").document(student.getId()).set(student);
+        }
     }
 
     public void deleteStudent(String id) {

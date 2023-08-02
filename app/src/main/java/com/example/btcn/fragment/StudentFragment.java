@@ -1,5 +1,6 @@
 package com.example.btcn.fragment;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AlertDialog;
@@ -32,60 +33,36 @@ import java.util.List;
 
 public class StudentFragment extends Fragment {
 
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-    private String mParam1;
-    private String mParam2;
-    List<Student> studentList = new ArrayList<>();
-    private List<Faculty> facultyList;
+    private List<Student> studentList = new ArrayList<>();
+    private StudentAdapter studentAdapter;
+    private List<Faculty> facultyList = new ArrayList<>();
+    private FacultyAdapter facultyAdapter;
+    private StudentFirebaseDAO studentFirebaseDAO;
+    private FacultyFirebaseDAO facultyFirebaseDAO;
+
     public StudentFragment() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment song.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static StudentFragment newInstance(String param1, String param2) {
-        StudentFragment fragment = new StudentFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
+    public static StudentFragment newInstance() {
+        return new StudentFragment();
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        StudentFirebaseDAO studentFirebaseDAO = new StudentFirebaseDAO(getActivity());
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_student, container, false);
+
+        studentFirebaseDAO = new StudentFirebaseDAO(getActivity());
+        facultyFirebaseDAO = new FacultyFirebaseDAO(getActivity());
+
         RecyclerView rcStudent = view.findViewById(R.id.rcStudent);
-        FacultyFirebaseDAO facultyFirebaseDAO = new FacultyFirebaseDAO(getActivity());
-        FacultyAdapter facultyAdapter = new FacultyAdapter(facultyList, facultyFirebaseDAO);
-        rcStudent.setAdapter(facultyAdapter);
-        facultyList = new ArrayList<>();
-//        facultyList.addAll(facultyFirebaseDAO.getAllFaculties());
-        StudentAdapter studentAdapter = new StudentAdapter(studentList, studentFirebaseDAO);
-        studentAdapter.listenStudentFirestore(studentFirebaseDAO, rcStudent);
-        rcStudent.setAdapter(studentAdapter);
-        rcStudent.setLayoutManager(new LinearLayoutManager(getActivity()));
-        RecyclerView.ItemDecoration itemDecoration = new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL);
-        rcStudent.addItemDecoration(itemDecoration);
+
+        facultyAdapter = new FacultyAdapter(facultyList, facultyFirebaseDAO);
         facultyFirebaseDAO.listenFaculties(new FacultyAdapter.OnDataChangeListener() {
             @Override
             public void onDataChanged(List<Faculty> faculties) {
@@ -94,61 +71,141 @@ public class StudentFragment extends Fragment {
                 facultyAdapter.notifyDataSetChanged();
             }
         });
-        studentList = studentFirebaseDAO.getAllStudents();
+
+        studentAdapter = new StudentAdapter(studentList, facultyList,studentFirebaseDAO);
+        studentFirebaseDAO.listenStudents(new StudentAdapter.OnDataChangeListener() {
+            @Override
+            public void onDataChanged(List<Student> students) {
+                studentList.clear();
+                studentList.addAll(students);
+                studentAdapter.notifyDataSetChanged();
+            }
+        });
         rcStudent.setAdapter(studentAdapter);
         rcStudent.setLayoutManager(new LinearLayoutManager(getActivity()));
+        RecyclerView.ItemDecoration itemDecoration = new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL);
+        rcStudent.addItemDecoration(itemDecoration);
+
+        studentAdapter.setItemClickListener(new StudentAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(Student student) {
+                editStudent(student);
+            }
+        });
+
         FloatingActionButton btnAdd = view.findViewById(R.id.btnAddStudent);
         btnAdd.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                View viewDialog = getLayoutInflater().inflate(R.layout.dialog_add_student, null);
-                AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
-                builder.setView(viewDialog);
-                AlertDialog alert = builder.create();
-                alert.show();
-                EditText edtStudentName = viewDialog.findViewById(R.id.edt_name);
-                EditText edtGPA = viewDialog.findViewById(R.id.edt_gpa);
-                Spinner spinnerFaculty = viewDialog.findViewById(R.id.spinner_faculty);
-                CustomArrayAdapter facultyAdapter = new CustomArrayAdapter(getContext(),
-                        android.R.layout.simple_spinner_item, facultyList);
-                facultyAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                spinnerFaculty.setAdapter(facultyAdapter);
-
-                viewDialog.findViewById(R.id.btn_save).setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        String studentName = edtStudentName.getText().toString().trim();
-                        String studentGPA = edtGPA.getText().toString();
-                        if (studentName.isEmpty()) {
-                            // Hiển thị thông báo lỗi nếu EditText tên sinh viên là rỗng
-                            Toast.makeText(getActivity(), "Vui lòng nhập tên sinh viên", Toast.LENGTH_SHORT).show();
-                        } else if (studentGPA.isEmpty()) {
-                            Toast.makeText(getActivity(), "Vui lòng nhập gpa sinh viên", Toast.LENGTH_SHORT).show();
-                        }
-                        else
-                        {
-                            // Lấy facultyId từ Faculty đã chọn
-                            Faculty selectedFaculty = (Faculty) spinnerFaculty.getSelectedItem();
-                            String facultyId = selectedFaculty.getId();
-                            double gpa = Double.parseDouble(studentGPA);
-
-                            // Thêm sinh viên vào Firebase
-                            Student student = new Student();
-                            student.setName(studentName);
-                            student.setFacultyId(facultyId); // Lưu facultyId đã chọn
-                            student.setGpa(gpa);
-                            studentFirebaseDAO.Insert(student);
-
-                            // Đóng dialog và cập nhật danh sách sinh viên trong RecyclerView
-                            alert.dismiss();
-                        }
-                    }
-                });
-
+                addNewStudent(view);
             }
         });
 
-        // Inflate the layout for this fragment
         return view;
     }
+
+    public void addNewStudent(View view) {
+        View viewDialog = getLayoutInflater().inflate(R.layout.dialog_add_student, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(view.getContext());
+        builder.setView(viewDialog);
+        AlertDialog alert = builder.create();
+        alert.show();
+        EditText edtStudentName = viewDialog.findViewById(R.id.edt_name);
+        EditText edtGPA = viewDialog.findViewById(R.id.edt_gpa);
+        Spinner spinnerFaculty = viewDialog.findViewById(R.id.spinner_faculty);
+        CustomArrayAdapter facultyAdapter = new CustomArrayAdapter(getContext(),
+                android.R.layout.simple_spinner_item, facultyList);
+        facultyAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinnerFaculty.setAdapter(facultyAdapter);
+
+        viewDialog.findViewById(R.id.btn_save).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String studentName = edtStudentName.getText().toString().trim();
+                String studentGPA = edtGPA.getText().toString();
+                if (studentName.isEmpty()) {
+                    Toast.makeText(getActivity(), "Vui lòng nhập tên sinh viên", Toast.LENGTH_SHORT).show();
+                } else if (studentGPA.isEmpty()) {
+                    Toast.makeText(getActivity(), "Vui lòng nhập gpa sinh viên", Toast.LENGTH_SHORT).show();
+                } else {
+                    Faculty selectedFaculty = (Faculty) spinnerFaculty.getSelectedItem();
+                    String facultyId = selectedFaculty.getId();
+                    double gpa = Double.parseDouble(studentGPA);
+
+                    Student student = new Student();
+                    student.setName(studentName);
+                    student.setFacultyId(facultyId);
+                    student.setGpa(gpa);
+                    studentFirebaseDAO.Insert(student);
+
+                    alert.dismiss();
+                }
+            }
+        });
+    }
+
+    public void editStudent(Student student) {
+        View viewDialog = getLayoutInflater().inflate(R.layout.dialog_add_student, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+
+        EditText edtName = viewDialog.findViewById(R.id.edt_name);
+        EditText gpa = viewDialog.findViewById(R.id.edt_gpa);
+        Spinner spinner_faculty = viewDialog.findViewById(R.id.spinner_faculty);
+
+        edtName.setText(student.getName());
+        gpa.setText(String.valueOf(student.getGpa()));
+
+        List<String> facultyNames = new ArrayList<>();
+        for (Faculty faculty : facultyList) {
+            facultyNames.add(faculty.getName());
+        }
+
+        ArrayAdapter<String> facultyAdapter = new ArrayAdapter<>(getContext(),
+                android.R.layout.simple_spinner_item, facultyNames);
+        facultyAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner_faculty.setAdapter(facultyAdapter);
+        for (int i = 0; i < facultyList.size(); i++) {
+            if (facultyList.get(i).getId().equals(student.getFacultyId())) {
+                spinner_faculty.setSelection(i);
+                break;
+            }
+        }
+
+        builder.setView(viewDialog)
+                .setTitle("Edit Student")
+                .setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String newName = edtName.getText().toString().trim();
+                        String newGpa = gpa.getText().toString().trim();
+                        int selectedFacultyIndex = spinner_faculty.getSelectedItemPosition();
+
+                        if (newName.isEmpty()) {
+                            Toast.makeText(getActivity(), "Please enter the student name", Toast.LENGTH_SHORT).show();
+                        } else {
+                            student.setName(newName);
+                            student.setGpa(Double.parseDouble(newGpa));
+
+                            // Get the selected faculty object from the list based on the index
+                            if (selectedFacultyIndex >= 0 && selectedFacultyIndex < facultyList.size()) {
+                                Faculty selectedFaculty = facultyList.get(selectedFacultyIndex);
+                                student.setFacultyId(selectedFaculty.getId());
+                            }
+
+                            studentFirebaseDAO.Update(student);
+                            dialog.dismiss();
+                        }
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+
+        AlertDialog alert = builder.create();
+        alert.show();
+    }
+
 }
