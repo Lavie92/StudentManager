@@ -11,14 +11,23 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.btcn.R;
 import com.example.btcn.dao.FacultyFirebaseDAO;
 import com.example.btcn.models.Faculty;
+import com.example.btcn.models.Student;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.util.List;
 
 public class FacultyAdapter extends RecyclerView.Adapter<FacultyAdapter.ViewHolder> {
 
+
+    public interface  OnItemClickListener {
+        void onItemClick(Faculty faculty);
+    }
     private List<Faculty> facultyList;
-   FacultyFirebaseDAO facultyFirebaseDAO;
+    private OnItemClickListener itemClickListener;
+    FacultyFirebaseDAO facultyFirebaseDAO;
+    public void setItemClickListener(OnItemClickListener itemClickListener) {
+        this.itemClickListener = itemClickListener;
+    }
 
     public FacultyAdapter(List<Faculty> facultyList, FacultyFirebaseDAO facultyFirebaseDAO) {
         this.facultyList = facultyList;
@@ -36,7 +45,14 @@ public class FacultyAdapter extends RecyclerView.Adapter<FacultyAdapter.ViewHold
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
         Faculty faculty = facultyList.get(position);
-
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (itemClickListener != null) {
+                    itemClickListener.onItemClick(faculty);
+                }
+            }
+        });
         holder.textName.setText(faculty.getName());
         holder.textCode.setText(faculty.getId());
         holder.textStudentCount.setText(String.valueOf(faculty.getStudentCount()));
@@ -82,8 +98,4 @@ public class FacultyAdapter extends RecyclerView.Adapter<FacultyAdapter.ViewHold
     public void addFaculty(Faculty faculty) {
         facultyFirebaseDAO.Insert(faculty);
     }
-//    public void updateFaculty(int position, Faculty faculty) {
-//        Faculty f = getItem(position);
-//
-//    }
 }

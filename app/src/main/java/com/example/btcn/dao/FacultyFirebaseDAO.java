@@ -9,6 +9,7 @@ import androidx.annotation.Nullable;
 
 import com.example.btcn.adapter.FacultyAdapter;
 import com.example.btcn.models.Faculty;
+import com.example.btcn.models.Student;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.DocumentReference;
@@ -58,13 +59,19 @@ public class FacultyFirebaseDAO {
     }
 
     public void updateFaculty(String id, Faculty faculty) {
-        db.collection("Faculties").document(id)
+        db.collection("Faculty").document(id)
                 .set(faculty);
+    }
+
+    public void Update(Faculty faculty) {
+        if (faculty.getId() != null) {
+            db.collection("Faculty").document(faculty.getId()).set(faculty);
+        }
     }
 
     public void deleteFacultyAndStudent(String id) {
         // Lấy danh sách studentIds
-        db.collection("Students")
+        db.collection("Student")
                 .whereEqualTo("facultyId", id)
                 .get()
                 .addOnCompleteListener(task -> {
@@ -132,7 +139,7 @@ public class FacultyFirebaseDAO {
         batch.commit();
     }
 
-    private void deleteFaculty(String id) {
+    public void deleteFaculty(String id) {
         db.collection("Faculties").document(id)
                 .delete();
     }

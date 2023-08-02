@@ -178,21 +178,32 @@ public class StudentFragment extends Fragment {
                     public void onClick(DialogInterface dialog, int which) {
                         String newName = edtName.getText().toString().trim();
                         String newGpa = gpa.getText().toString().trim();
+
                         int selectedFacultyIndex = spinner_faculty.getSelectedItemPosition();
 
-                        if (newName.isEmpty()) {
+                        if (newName.isEmpty() && !newGpa.isEmpty()) {
                             Toast.makeText(getActivity(), "Please enter the student name", Toast.LENGTH_SHORT).show();
                         } else {
                             student.setName(newName);
-                            student.setGpa(Double.parseDouble(newGpa));
+                            if (!newGpa.isEmpty()) {
+                                double gpaValue = Double.parseDouble(newGpa);
+                                student.setGpa(gpaValue);
+                            } else {
+                                student.setGpa(0.0);
+                            }
 
                             // Get the selected faculty object from the list based on the index
                             if (selectedFacultyIndex >= 0 && selectedFacultyIndex < facultyList.size()) {
                                 Faculty selectedFaculty = facultyList.get(selectedFacultyIndex);
                                 student.setFacultyId(selectedFaculty.getId());
                             }
-
-                            studentFirebaseDAO.Update(student);
+                            if (newName.isEmpty() && newGpa.isEmpty()) {
+                                // If both name and GPA are empty, delete the student
+                                studentFirebaseDAO.deleteStudent(student.getId());
+                            } else {
+                                // Update the student with the new data
+                                studentFirebaseDAO.Update(student);
+                            }
                             dialog.dismiss();
                         }
                     }

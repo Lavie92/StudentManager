@@ -106,7 +106,7 @@ public class StudentFirebaseDAO {
     }
 
     public void deleteStudent(String id) {
-        db.collection("Students").document(id)
+        db.collection("Student").document(id)
                 .delete();
     }
 

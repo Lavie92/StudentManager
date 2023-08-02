@@ -29,6 +29,7 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.ViewHold
     public interface OnDataChangeListener {
         void onDataChanged(List<Student> students);
     }
+
     public void setItemClickListener(OnItemClickListener itemClickListener) {
         this.itemClickListener = itemClickListener;
     }
@@ -36,6 +37,7 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.ViewHold
     public interface OnItemClickListener {
         void onItemClick(Student student);
     }
+
     private List<Student> studentList;
     StudentFirebaseDAO studentFirebaseDAO;
 
@@ -48,17 +50,21 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.ViewHold
         return "";
     }
 
-    public StudentAdapter(List<Student> studentList, List<Faculty> facultyList, StudentFirebaseDAO studentFirebaseDAO) {
+    public StudentAdapter(List<Student> studentList, List<Faculty> facultyList,
+            StudentFirebaseDAO studentFirebaseDAO) {
         this.studentList = studentList;
         this.facultyList = facultyList;
         this.studentFirebaseDAO = studentFirebaseDAO;
     }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_student, parent, false);
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_student, parent, false);
         return new ViewHolder(view);
     }
+
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
 
@@ -76,10 +82,6 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.ViewHold
         holder.txtGpa.setText(String.format("%.2f", student.getGpa()));
         String facultyName = getFacultyNameById(student.getFacultyId());
         holder.txtStudentFaculty.setText(facultyName);
-//        // set avatar
-//        Glide.with(holder.imgAvatar)
-//                .load(student.getAvatarUrl())
-//                .into(holder.imgAvatar);
     }
 
     @Override
@@ -87,7 +89,8 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.ViewHold
         return studentList.size();
     }
 
-    public void listenStudentFirestore(StudentFirebaseDAO studentFirebaseDAO, RecyclerView recyclerView) {
+    public void listenStudentFirestore(StudentFirebaseDAO studentFirebaseDAO,
+            RecyclerView recyclerView) {
         studentFirebaseDAO.listenStudents(new StudentAdapter.OnDataChangeListener() {
             @Override
             public void onDataChanged(List<Student> students) {
@@ -98,13 +101,12 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.ViewHold
         });
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
+    public class ViewHolder extends RecyclerView.ViewHolder  {
 
         private ImageView imgAvatar;
         private TextView txtName;
         private TextView txtStudentFaculty;
         private TextView txtGpa;
-
 
 
         public ViewHolder(View itemView) {
@@ -113,22 +115,9 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.ViewHold
             txtName = itemView.findViewById(R.id.text_name);
             txtStudentFaculty = itemView.findViewById(R.id.text_student_faculty);
             txtGpa = itemView.findViewById(R.id.text_gpa);
-            itemView.setOnClickListener(this);
-
         }
-
-        @Override
-        public void onClick(View view) {
-            if (itemClickListener != null) {
-                int position = getAdapterPosition();
-                if (position != RecyclerView.NO_POSITION) {
-                    Student clickedStudent = studentList.get(position);
-                    itemClickListener.onItemClick(clickedStudent);
-                }
-        }
-        }
-
     }
+
     public void addStudent(Student student) {
         studentFirebaseDAO.Insert(student);
     }

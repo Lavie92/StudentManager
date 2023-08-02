@@ -1,5 +1,6 @@
 package com.example.btcn.fragment;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AlertDialog;
@@ -11,13 +12,17 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.example.btcn.R;
 import com.example.btcn.adapter.FacultyAdapter;
+import com.example.btcn.adapter.StudentAdapter;
 import com.example.btcn.dao.FacultyFirebaseDAO;
 import com.example.btcn.models.Faculty;
+import com.example.btcn.models.Student;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.ArrayList;
@@ -34,20 +39,12 @@ public class FacultyFragment extends Fragment {
     // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
+    FacultyFirebaseDAO facultyFirebaseDAO = new FacultyFirebaseDAO(getActivity());
+
 
     public FacultyFragment() {
 
     }
-
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment course.
-     */
-    // TODO: Rename and change types and number of parameters
     public static FacultyFragment newInstance(String param1, String param2) {
         FacultyFragment fragment = new FacultyFragment();
         Bundle args = new Bundle();
@@ -68,14 +65,18 @@ public class FacultyFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        FacultyFirebaseDAO facultyFirebaseDAO = new FacultyFirebaseDAO(getActivity());
+            Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_faculty, container, false);
         RecyclerView rcFaculty = view.findViewById(R.id.rc_faculty);
 
         FacultyAdapter facultyAdapter = new FacultyAdapter(facultyList, facultyFirebaseDAO);
         facultyAdapter.listenFacultyFirestore(facultyFirebaseDAO, rcFaculty);
-
+        facultyAdapter.setItemClickListener(new FacultyAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(Faculty faculty) {
+                editFaculty(faculty);
+            }
+        });
         rcFaculty.setAdapter(facultyAdapter);
         rcFaculty.setLayoutManager(new LinearLayoutManager(getActivity()));
         RecyclerView.ItemDecoration itemDecoration = new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL);
@@ -111,5 +112,38 @@ public class FacultyFragment extends Fragment {
             }
         });
         return view;
+    }
+    public void editFaculty(Faculty faculty) {
+        View viewDialog = getLayoutInflater().inflate(R.layout.dialog_add_faculty, null);
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+
+        EditText edtName = viewDialog.findViewById(R.id.edt_faculty_name);
+        edtName.setText(faculty.getName());
+        builder.setView(viewDialog)
+                .setTitle("Edit Faculty")
+                .setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String newName = edtName.getText().toString().trim();
+
+                        if (newName.isEmpty()) {
+                            facultyFirebaseDAO.deleteFaculty(faculty.getId());
+                            Toast.makeText(getActivity(), "Đã xoá Faculty thành công", Toast.LENGTH_SHORT).show();
+                        } else {
+                            faculty.setName(newName);
+                            facultyFirebaseDAO.Update(faculty);
+                            dialog.dismiss();
+                        }
+                    }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                    }
+                });
+
+        AlertDialog alert = builder.create();
+        alert.show();
     }
 }
